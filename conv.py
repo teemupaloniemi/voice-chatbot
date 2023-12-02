@@ -1,7 +1,6 @@
 import os
 from gtts import gTTS
 import contextlib
-import playsound
 import sys
 import pyaudio
 import wave
@@ -62,7 +61,7 @@ def play(assistant_text):
     
     filename = "speak.mp3"
     sound.save(filename)
-    os.system("play " + "speak.mp3"+" tempo 1.5")
+    os.system("afplay " + "speak.mp3") #"+" tempo 1.5")
     os.remove(filename)
 
 def main():
