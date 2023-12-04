@@ -22,19 +22,22 @@ RESET = "\033[0m"  # Reset to default color
 
 
 def get_response_from_llama_server(prompt):
-    url = 'http://localhost:8080/completion'  # Replace with the correct URL if needed
-    headers = {'Content-Type': 'application/json'}
-    data = json.dumps({
-        'prompt': prompt,
-        'n_predict': 100  # Adjust as needed
-    })
+    try: 
+        url = 'http://localhost:8080/completion'  # Replace with the correct URL if needed
+        headers = {'Content-Type': 'application/json'}
+        data = json.dumps({
+            'prompt': prompt,
+            'n_predict': 100  # Adjust as needed
+        })
 
-    response = requests.post(url, headers=headers, data=data)
-    #print(RED + str(response.json()) + RESET)
-    if response.status_code == 200:
-        return response.json()['content']
-    else:
-        return "Error: " + response.text
+        response = requests.post(url, headers=headers, data=data)
+        #print(RED + str(response.json()) + RESET)
+        if response.status_code == 200:
+            return response.json()['content']
+        else:
+            return "Error: " + response.text
+    except: 
+        print(RED + "ERROR: " + RESET + "Start up the llama.cpp server with \"" + GREEN + "./server -m models/YOUR_MODEL -ngl 100" + RESET + "\" in the llama.cpp folder!")
 
 def record_voice(filename, record_seconds=5):
     # Setup the parameters for recording
