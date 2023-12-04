@@ -1,4 +1,4 @@
-#VOICE CHATBOT
+# VOICE CHATBOT
 
 ## Overview 
 
@@ -10,7 +10,7 @@ This Python program allows users to interact using speech. It records the user's
  - Python 3.x
  - Libraries: gtts, pyaudio, whisper, playsound, subprocess, wave
  - Microphone for recording voice
- - Internet connection for speech-to-text translation
+ - Internet connection for text-to-speech (gTTS) translation
  - You need a language model and llama.cpp library
 
 ## Installation
