@@ -27,7 +27,7 @@ def get_response_from_llama_server(prompt):
         headers = {'Content-Type': 'application/json'}
         data = json.dumps({
             'prompt': prompt,
-            'n_predict': 100  # Adjust as needed
+            'n_predict': 256  # Adjust as needed
         })
 
         response = requests.post(url, headers=headers, data=data)
@@ -39,7 +39,7 @@ def get_response_from_llama_server(prompt):
     except: 
         print(RED + "ERROR: " + RESET + "Start up the llama.cpp server with \"" + GREEN + "./server -m models/YOUR_MODEL -ngl 100" + RESET + "\" in the llama.cpp folder!")
 
-def record_voice(filename, record_seconds=5):
+def record_voice(filename, record_seconds=8):
     # Setup the parameters for recording
     FORMAT = pyaudio.paInt16
     CHANNELS = 1
@@ -60,7 +60,7 @@ def record_voice(filename, record_seconds=5):
         data = stream.read(CHUNK)
         frames.append(data)
 
-    print("Stopped recording, analyzing...")
+    print("Analyzing...")
     # Stop and close the stream and audio
     stream.stop_stream()
     stream.close()
@@ -87,6 +87,12 @@ def play(assistant_text):
     os.system("play " + "speak.mp3"+" tempo 1.5")
     os.remove(filename)
 
+def tokenize(transcription): 
+        system = "<|im_start|>system\nYou are an assistant called Lexie. Help answer my questions. Give a short answer, please.  Lexie is really smart and answers in clear fashion but accurately<|im_end|>"
+        prompt = system + "<|im_start|>user\n" + transcription + "<|im_end|>" + "<|im_start|>assistant\nThe answer is"
+        return prompt
+
+
 def main():
     while 1:
         # Record the user's voice
@@ -95,8 +101,6 @@ def main():
 
         # Transcribe the recorded voice
         transcription = transcribe_voice(voice_filename)
-        preprompt = "Help answer my questions. Give a short answer, please.  My question is: "
-        prompt = preprompt + transcription
         
         if len(transcription) == 0: 
             continue
@@ -106,10 +110,18 @@ def main():
 
         if "exit" in transcription.lower() or "stop" in transcription.lower():
             break
-
-        response = get_response_from_llama_server(transcription)
-        print(CYAN + "Assistant: " + RESET + response.strip())
-        play(response.strip())
+        prompt = tokenize(transcription)
+        response = get_response_from_llama_server(prompt)
+        print(YELLOW + "Assistant: " + RESET + response.strip())
+        if '```python' in response: 
+            print(f"{RED} Python detected! Do you want to run it (y/n)? {RESET}")
+            ans = input("(y/n)")
+            if 'y' in ans:
+                code = response.split('```python')[1].split('```')[0]
+                print(RED + "Running: " + RESET + code)
+                exec(code)
+        else: 
+            play(response.strip())
 
 if __name__ == "__main__": 
     main()
