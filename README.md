@@ -2,7 +2,7 @@
 
 ## Overview 
 
-This Python program allows users to interact using speech. It records the user's speech, transcribes it, and then provides both speech and text output based on the processed input. The program utilizes various libraries like gtts, pyaudio, whisper, and playsound for its functionality.
+This Python program allows users to interact with LLMs using speech. It records the user's speech, transcribes it, and then provides both speech and text output based on the processed input. The program utilizes various libraries like gtts, pyaudio, whisper, and playsound for its functionality.
 
 ![](http://users.jyu.fi/~tealjapa/example/example.mp4)(http://users.jyu.fi/~tealjapa/example/example.mp4)
 
