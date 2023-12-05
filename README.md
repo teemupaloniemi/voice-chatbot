@@ -26,4 +26,4 @@ This Python program allows users to interact using speech. It records the user's
 
 ## Licence
 
-Check the LIcense file. It's MIT.  
+Check the License file. It's MIT.  
