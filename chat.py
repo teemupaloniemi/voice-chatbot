@@ -23,7 +23,7 @@ def generate(prompt):
         headers = {'Content-Type': 'application/json'}
         data = json.dumps({
             'prompt': prompt,
-            'n_predict': 256  # Adjust as needed
+            'n_predict': 1500  # Adjust as needed
         })
 
         response = requests.post(url, headers=headers, data=data)
@@ -53,7 +53,7 @@ def main():
         past_assistant = ''
 
         # Transcribe the recorded voice
-        transcription = input(BLUE + "\n>" + RESET)
+        transcription = input("\nUser: ")
 
         # Exit calls
         if "exit" in transcription.lower() or "stop" in transcription.lower():
@@ -73,7 +73,7 @@ def main():
         
         # How many of the past interactions we want to keep in memory
         # Be awere of the context length! 
-        cache_length = 10
+        cache_length = 4
         if len(past_interaction) > cache_length: 
             past_interaction.pop(0)
  
@@ -91,9 +91,11 @@ def main():
                 # Redirect stdout to capture prints
                 old_stdout = sys.stdout  # Save the current stdout
                 sys.stdout = buffer = io.StringIO()
-
-                # Execute the code
-                exec(code)
+                try: 
+                    # Execute the code
+                    exec(code)
+                except:
+                    print(RED + "ERROR in running code" + RESET) 
 
                 # Restore stdout and get the captured output
                 sys.stdout = old_stdout
