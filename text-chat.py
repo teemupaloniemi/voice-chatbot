@@ -36,7 +36,7 @@ def generate(prompt):
         print(RED + "ERROR: " + RESET + "Start up the llama.cpp server with \"" + GREEN + "./server -m models/YOUR_MODEL -ngl 100" + RESET + "\" in the llama.cpp folder!")
 
 def tokenize(transcription, past_interaction): 
-        system = "<|im_start|>system\nYou are an assistant called Lexie. Help answer my questions. Give a short answer, please.  Lexie is really smart and answers in clear fashion but accurately<|im_end|>"
+        system = "<|im_start|>system\nYou are an assistant called Lexie. You are a superintelligent system developed to help users and answer their questions. Give a short answer, please. You, Lexie, are really smart and answers in clear fashion but accurately<|im_end|>"
         for item in past_interaction: 
             system += item['user'] + item['assistant']
         user = "<|im_start|>user\n" + transcription + "<|im_end|>"
