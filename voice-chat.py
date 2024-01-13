@@ -10,7 +10,6 @@ import wave
 import whisper
 import subprocess
 
-
 # ANSI escape codes for some colors
 RED = "\033[31m"  # Red text
 GREEN = "\033[32m"  # Green text
@@ -20,14 +19,15 @@ MAGENTA = "\033[35m"  # Magenta text
 CYAN = "\033[36m"  # Cyan text
 RESET = "\033[0m"  # Reset to default color
 
+#=================================
 
 def generate(prompt):
     try: 
-        url = 'http://localhost:8080/completion'  # Replace with the correct URL if needed
+        url = 'http://localhost:8081/completion'  # Replace with the correct URL if needed
         headers = {'Content-Type': 'application/json'}
         data = json.dumps({
             'prompt': prompt,
-            'n_predict': 256  # Adjust as needed
+            'n_predict': 128  # Adjust as needed
         })
 
         response = requests.post(url, headers=headers, data=data)
@@ -39,11 +39,13 @@ def generate(prompt):
     except: 
         print(RED + "ERROR: " + RESET + "Start up the llama.cpp server with \"" + GREEN + "./server -m models/YOUR_MODEL -ngl 100" + RESET + "\" in the llama.cpp folder!")
 
-def record_voice(filename, record_seconds=10):
+#=================================
+
+def record_voice(filename, record_seconds=3):
     # Setup the parameters for recording
     FORMAT = pyaudio.paInt16
     CHANNELS = 1
-    RATE = 44100
+    RATE = 16000
     CHUNK = 1024
 
     audio = pyaudio.PyAudio()
@@ -73,10 +75,34 @@ def record_voice(filename, record_seconds=10):
         waveFile.setframerate(RATE)
         waveFile.writeframes(b''.join(frames))
 
+#=================================
+
 def transcribe_voice(filename):
-    model = whisper.load_model("tiny")
-    result = model.transcribe(filename, language='english')
-    return result["text"]
+    url = 'http://127.0.0.1:8080/inference'
+    file_path = filename
+    temperature = '0.0'
+    temperature_inc = '0.2'
+    response_format = 'json'
+
+    try:
+        files = {'file': ('file', open(file_path, 'rb'))}
+        data = {
+            'temperature': temperature,
+            'temperature_inc': temperature_inc,
+            'response_format': response_format
+        }
+
+        response = requests.post(url, files=files, data=data)
+
+        if response.status_code == 200:
+            #print("Response: ", response)
+            return response.json()['text']
+        else:
+            print(f"Error: {response.status_code}\n{response.text}")
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+    
+#=================================
 
 def play(assistant_text): 
     language = 'en'
@@ -87,6 +113,8 @@ def play(assistant_text):
     os.system("play " + "speak.mp3"+" tempo 1.5")
     os.remove(filename)
 
+#=================================
+
 def tokenize(transcription, past_interaction): 
         system = "<|im_start|>system\nYou are an assistant called Lexie. Help answer my questions. Give a short answer, please.  Lexie is really smart and answers in clear fashion but accurately<|im_end|>"
         for item in past_interaction: 
@@ -96,7 +124,7 @@ def tokenize(transcription, past_interaction):
         prompt = system + user + assistant
         return prompt, user, assistant
 
-
+#=================================
 
 def main():
     PRINT_CACHE = False
@@ -159,6 +187,9 @@ def main():
                 print(MAGENTA + "Cache user: " + RESET + line['user'])
                 print(MAGENTA + "Cache assistant: " + RESET + line['assistant'])
             print(MAGENTA + '-'*16 + "MEMORY WINDOW END" + '-'*16 + RESET) 
+
+#=================================
+
 if __name__ == "__main__": 
     main()
 
