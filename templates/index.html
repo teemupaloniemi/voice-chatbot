@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Application</title>
+    <style>
+        body {
+            font-family: monospace;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        #chatbox {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 10px;
+            border: 3px solid #ccc;
+            border-radius: 8px;
+        }
+
+        #input-container {
+            max-width: 600px;
+            margin: 10px auto;
+            padding: 10px;
+            border: 3px solid #ccc;
+            border-radius: 8px;
+        }
+
+        form {
+            display: grid;
+            grid-template-areas: "input input input send";
+            align-items: center;
+            justify-items: center;
+        }
+
+        #transcription {
+            width: 80%;
+            padding: 8px;
+            margin: 8px;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            grid-area: input;
+        }
+
+        #send-button {
+            width: 50%;
+            height: 50%;
+
+            cursor: pointer;
+            grid-area: send;
+        }
+
+        .code-block {
+            margin: 10px auto;
+            padding: 10px;
+            border: 3px solid #ccc;
+            background-color: black;
+            color: white;
+            border-radius: 8px;
+            overflow-x: auto;
+            /* Added to enable horizontal scrollbar */
+            white-space: pre-wrap;
+            /* Preserve line breaks */
+            max-width: 100%;
+            /* Ensure code doesn't overflow container */
+        }
+    </style>
+</head>
+
+<body>
+    <div id="chatbox">
+        {% if past_interaction %}
+            {% for interaction in past_interaction %}
+                <p>
+                    <strong>User:</strong> {{ interaction.user }}<br>
+                    <strong>Assistant:</strong>
+                    {% if interaction.is_code %}
+                        <p>
+                            {{ interaction.assistantstart }}
+                        </p>
+                        {% for code_block in interaction.code_blocks %}
+                        <div class="code-block" data-code="{{ code_block }}">
+                            <pre><code>{{ code_block }}</code></pre>
+                            <button class="copy-button">Copy</button>
+                        </div>
+                        <p>
+                            {{ interaction.assistantend }}
+                        </p>
+                    {% endfor %}
+                {% else %}
+                    {{ interaction.assistantstart }}
+                {% endif %}
+                </p>
+            {% endfor %}
+        {% endif %}
+    </div>
+    
+
+    <div id="input-container">
+        <div>
+            Tokens outputted: {{ timings.predicted_n }} Tokens per second: {{ timings.predicted_per_second }}
+        </div>
+        <form action="/" method="post">
+            <textarea id="transcription" name="transcription" rows="3" required></textarea>
+            <button type="submit" id="send-button">Send</button>
+        </form>
+    </div>
+
+    <script>
+        // Add event listener to each code block for copying
+        document.querySelectorAll('.code-block').forEach(function (codeBlock) {
+            var codeText = codeBlock.dataset.code;
+            codeBlock.innerHTML = '<pre><code>' + codeText + '</code></pre><button class="copy-button">Copy</button>';
+            codeBlock.querySelector('.copy-button').addEventListener('click', function () {
+                copyToClipboard(codeText);
+            });
+        });
+
+        // Function to copy text to clipboard
+        function copyToClipboard(text) {
+            var textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+        }
+    </script>
+</body>
+
+</html>

@@ -19,11 +19,11 @@ RESET = "\033[0m"  # Reset to default color
 
 def generate(prompt):
     try: 
-        url = 'http://localhost:8080/completion'  # Replace with the correct URL if needed
+        url = 'http://localhost:8081/completion'  # Replace with the correct URL if needed
         headers = {'Content-Type': 'application/json'}
         data = json.dumps({
             'prompt': prompt,
-            'n_predict': 1500  # Adjust as needed
+            'n_predict': 128  # Adjust as needed
         })
 
         response = requests.post(url, headers=headers, data=data)
@@ -53,7 +53,7 @@ def main():
         past_assistant = ''
 
         # Transcribe the recorded voice
-        transcription = input("\nUser: ")
+        transcription = input("\nUser: ") # <--- here is the input point
 
         # Exit calls
         if "exit" in transcription.lower() or "stop" in transcription.lower():
@@ -78,7 +78,7 @@ def main():
             past_interaction.pop(0)
  
         # Print answer
-        print(YELLOW + "Assistant: " + RESET + response.strip())
+        print(YELLOW + "Assistant: " + RESET + response.strip()) # <--- here is the output point
 
 
         if '```python' in response:

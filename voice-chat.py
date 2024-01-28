@@ -28,7 +28,7 @@ class Assistant:
             headers = {'Content-Type': 'application/json'}
             data = json.dumps({
 				'prompt': prompt,
-				'n_predict': 256  # Adjust as needed
+				'n_predict': 1024  # Adjust as needed
 			})
 
             response = requests.post(url, headers=headers, data=data)
@@ -105,7 +105,7 @@ class AudioHandler:
         print("Recording...")
         
         frames = []
-        print(RATE, CHUNK, record_seconds)
+        #print(RATE, CHUNK, record_seconds)
         for i in range(0, int(RATE / CHUNK * record_seconds)):
             data = stream.read(CHUNK)
             frames.append(data)
