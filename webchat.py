@@ -1,3 +1,4 @@
+import subprocess
 import requests
 import json
 from flask import Flask, render_template, request
@@ -39,7 +40,7 @@ def generate(prompt):
         print(RED + "ERROR: " + RESET + "Start up the llama.cpp server with \"" + GREEN + "./server -m models/YOUR_MODEL -ngl 100" + RESET + "\" in the llama.cpp folder!")
 
 def tokenize(transcription, past_interaction): 
-        system = "<|im_start|>system\nYou are an assistant called Lexie. You are a superintelligent system developed to help users and answer their questions. Give a short answer, please. You, Lexie, are really smart and answers in clear fashion but accurately. Give all visualizations with graphviz like this, ```dot [code goes here]```.<|im_end|>"
+        system = "<|im_start|>system\nYou are an assistant called Lexie. You are a superintelligent system developed to help users and answer their questions. Give a short answer, please. You, Lexie, are really smart and answer in a clear fashion but accurately. Your assistant is equipped with visualization tools such as PlantUML and Graphviz. Use the corresponding tags for each tool to enhance communication. For PlantUML diagrams, employ the ```plantuml tag. For Graphviz DOT language, use the ```graphviz tag.<|im_end|>"
         for item in past_interaction: 
             system += item['user'] + item['assistant']
         user = "<|im_start|>user\n" + transcription + "<|im_end|>"
@@ -80,25 +81,33 @@ def index():
         elif "```plasma" in response:
             graphviz_text = re.findall(r'```plasma(.*?)```', response, re.DOTALL)
         else:
-            # Handle the case when neither "dot" nor "graphviz" is present in the response
             graphviz_text = None
+
+        if "```plantuml" in response:
+            plantuml_text = re.findall(r'```plantuml(.*?)```', response, re.DOTALL)
+        elif "```plantUML" in response:
+            plantuml_text = re.findall(r'```plantUML(.*?)```', response, re.DOTALL)
+        elif "```PlantUML" in response:
+            plantuml_text = re.findall(r'```PlantUML(.*?)```', response, re.DOTALL)
+        else:
+            plantuml_text = None
 
         try:
             if graphviz_text:
                 graph_code = graphviz_text[0]
-                print()
-                print(graph_code)
-                print()
-                # Create a Source object from the DOT code
                 graph = Source(graph_code, format='png')
-
-                # Define the path for saving the image in the static/images folder
                 img_path = os.path.join('static', 'images', f'graph{len(past_interaction)}')
-
-                # Save the graph to the specified folder
                 graph.render(img_path, format='png', cleanup=True)
-
-                # Set the image URL for displaying in the HTML
+                img_url = f'graph{len(past_interaction)}.png'
+                
+            if plantuml_text:
+                plantuml_code = plantuml_text[0]
+                img_name = f'graph{len(past_interaction)}'
+                img_path = os.path.join('static', 'images', img_name)
+                with open(f'{img_path}.puml', 'w') as file:
+                    file.write(plantuml_code)
+                print("Runnning for a file", f'{img_path}.puml')
+                subprocess.run(['python3', '-m', 'plantuml', f'./{img_path}.puml'])
                 img_url = f'graph{len(past_interaction)}.png'
         except:
             pass
