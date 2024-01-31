@@ -2,6 +2,8 @@ import requests
 import json
 from flask import Flask, render_template, request
 import regex as re
+from graphviz import Source
+import os
 app = Flask(__name__)
 
 PRINT_CACHE = True
@@ -24,7 +26,7 @@ def generate(prompt):
         headers = {'Content-Type': 'application/json'}
         data = json.dumps({
             'prompt': prompt,
-            'n_predict': 1024  # Adjust as needed
+            'n_predict': 16000  # Adjust as needed
         })
 
         response = requests.post(url, headers=headers, data=data)
@@ -37,7 +39,7 @@ def generate(prompt):
         print(RED + "ERROR: " + RESET + "Start up the llama.cpp server with \"" + GREEN + "./server -m models/YOUR_MODEL -ngl 100" + RESET + "\" in the llama.cpp folder!")
 
 def tokenize(transcription, past_interaction): 
-        system = "<|im_start|>system\nYou are an assistant called Lexie. You are a superintelligent system developed to help users and answer their questions. Give a short answer, please. You, Lexie, are really smart and answers in clear fashion but accurately<|im_end|>"
+        system = "<|im_start|>system\nYou are an assistant called Lexie. You are a superintelligent system developed to help users and answer their questions. Give a short answer, please. You, Lexie, are really smart and answers in clear fashion but accurately. Give all visualizations with graphviz like this, ```dot [code goes here]```.<|im_end|>"
         for item in past_interaction: 
             system += item['user'] + item['assistant']
         user = "<|im_start|>user\n" + transcription + "<|im_end|>"
@@ -70,29 +72,65 @@ def index():
         if len(tmp_interaction) > cache_length:
             tmp_interaction.pop(0)
 
+        img_url = ""
+        if "```dot" in response:
+            graphviz_text = re.findall(r'```dot(.*?)```', response, re.DOTALL)
+        elif "```graphviz" in response:
+            graphviz_text = re.findall(r'```graphviz(.*?)```', response, re.DOTALL)
+        elif "```plasma" in response:
+            graphviz_text = re.findall(r'```plasma(.*?)```', response, re.DOTALL)
+        else:
+            # Handle the case when neither "dot" nor "graphviz" is present in the response
+            graphviz_text = None
+
+        try:
+            if graphviz_text:
+                graph_code = graphviz_text[0]
+                print()
+                print(graph_code)
+                print()
+                # Create a Source object from the DOT code
+                graph = Source(graph_code, format='png')
+
+                # Define the path for saving the image in the static/images folder
+                img_path = os.path.join('static', 'images', f'graph{len(past_interaction)}')
+
+                # Save the graph to the specified folder
+                graph.render(img_path, format='png', cleanup=True)
+
+                # Set the image URL for displaying in the HTML
+                img_url = f'graph{len(past_interaction)}.png'
+        except:
+            pass
+
         tmp_user = past_user.replace("<|im_start|>user", "")
         tmp_user = tmp_user.replace("<|im_end|>", "")
         tmp_assistant = past_assistant.replace("<|im_start|>assistant", "")
         tmp_assistant = tmp_assistant.replace("<|im_end|>", "")
         code_blocks = re.findall(r'```(?!html\s)(.*?)```', tmp_assistant, re.DOTALL)
         is_code = bool(code_blocks)
-        assistantstart = tmp_assistant
-        assistantend = ""
+        assistant_list = []
         if len(code_blocks) > 0:
             for stuff in code_blocks: 
                 tmp_assistant = tmp_assistant.replace("```"+stuff+"```","[splithere]")
-            
-            s = tmp_assistant.split("[splithere]")
-            if len(s) == 2:
-                assistantstart = s[0]
-                assistantend = s[1]
-        tmp_interaction.append({'user': tmp_user, 'assistantstart': assistantstart, 'assistantend': assistantend, 'is_code': is_code, 'code_blocks': code_blocks})
-    
+            assistant_list = tmp_assistant.split("[splithere]")
+
+        paired_interactions = []
+        for code_block, assistant in zip(code_blocks, assistant_list):
+            paired_interactions.append({
+                'code_block': code_block,
+                'assistant': assistant,
+            })
+
+        tmp_interaction.append({'user': tmp_user, 'assistant': tmp_assistant, 'is_code': is_code, 'code_blocks': paired_interactions, 'is_image': (len(img_url) > 0), 'image_url': img_url})
+
         if PRINT_CACHE:
             print_memory_window()
 
         return render_template("index.html", past_interaction=tmp_interaction, timings=timings)
 
+    past_interaction = []
+    tmp_interaction = []
     return render_template("index.html", past_interaction=past_interaction)
 
 def print_memory_window():
@@ -105,4 +143,4 @@ def print_memory_window():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=3000)

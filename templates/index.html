@@ -19,22 +19,29 @@
         }
 
         #chatbox {
-            max-width: 600px;
+            max-width: 900px;
             margin: 20px auto;
-            padding: 10px;
-            border: 3px solid #ccc;
-            border-radius: 8px;
+            padding: 4px;
         }
 
         #input-container {
-            max-width: 600px;
-            margin: 10px auto;
-            padding: 10px;
+            max-width: 900px;
+            margin: 4px auto;
+            padding: 4px;
             border: 3px solid #ccc;
             border-radius: 8px;
+            display: grid;
+            grid-template-areas: 
+                "timings" 
+                "form";
+            grid-gap: 4px;
         }
 
-        form {
+        #input-from { 
+            grid-area: form;
+        }
+        
+        #input-grid { 
             display: grid;
             grid-template-areas: "input input input send";
             align-items: center;
@@ -42,7 +49,8 @@
         }
 
         #transcription {
-            width: 80%;
+            width: 90%;
+            max-width: 90%;
             padding: 8px;
             margin: 8px;
             border: 2px solid #ccc;
@@ -51,66 +59,116 @@
         }
 
         #send-button {
-            width: 50%;
-            height: 50%;
-
             cursor: pointer;
             grid-area: send;
+            width: 50%;
+            height: 50%; 
+        }
+
+        #single-question-answer-box { 
+            padding: 1em;
+            border: 2px solid #ccc;
+            border-radius: 20px;
+            margin-bottom: 1em;
+        }
+
+        #user { 
+            margin-bottom: 1em;
+        }
+
+        #timings { 
+            grid-area: timings;
+            display: grid;
+            grid-template-areas: "tokens tokenspersec";
+            align-items: center;  
+            justify-items: center;
+            margin: 1em;
+        }
+
+        #tokens { 
+            grid-area: tokens;
+        }
+
+        #tokens-per-second { 
+            grid-area: tokenspersec;
         }
 
         .code-block {
-            margin: 10px auto;
-            padding: 10px;
+            margin: 4px auto;
+            padding: 4px;
             border: 3px solid #ccc;
             background-color: black;
             color: white;
             border-radius: 8px;
             overflow-x: auto;
-            /* Added to enable horizontal scrollbar */
             white-space: pre-wrap;
-            /* Preserve line breaks */
             max-width: 100%;
-            /* Ensure code doesn't overflow container */
+        }
+
+        @media screen and (max-width: 600px) {
+            #chatbox,
+            #input-container {
+                margin-left: 4px;
+                margin-right: 4px;
+            }
+
+
+            form {
+                display: grid;
+                grid-template-areas: "input input send send";
+                align-items: center;
+                justify-items: center;
+            }
         }
     </style>
 </head>
 
 <body>
-    <div id="chatbox">
-        {% if past_interaction %}
+    <h1>UI</h1>
+    {% if past_interaction %}
+        <div id="chatbox">
             {% for interaction in past_interaction %}
-                <p>
-                    <strong>User:</strong> {{ interaction.user }}<br>
-                    <strong>Assistant:</strong>
-                    {% if interaction.is_code %}
-                        <p>
-                            {{ interaction.assistantstart }}
-                        </p>
-                        {% for code_block in interaction.code_blocks %}
-                        <div class="code-block" data-code="{{ code_block }}">
-                            <pre><code>{{ code_block }}</code></pre>
-                            <button class="copy-button">Copy</button>
-                        </div>
-                        <p>
-                            {{ interaction.assistantend }}
-                        </p>
-                    {% endfor %}
-                {% else %}
-                    {{ interaction.assistantstart }}
-                {% endif %}
-                </p>
-            {% endfor %}
-        {% endif %}
-    </div>
-    
+                <div id="single-question-answer-box">
+                    <div id="user">
+                        <strong>User:</strong> {{ interaction.user }}
+                    </div>
+                    <div id="assistant">
+                        <strong>Assistant:</strong>
+                            {% if interaction.is_code %}
+                                {% for item in interaction.code_blocks %}
+                                    <p>
+                                        {{ item.assistant }}
+                                    </p>
+                                    <div class="code-block" data-code="{{ item.code_block }}">
+                                        <pre style="white-space: pre-wrap;"><code>{{ item.code_block }}</code></pre>
+                                        <button class="copy-button">Copy</button>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                {{ interaction.assistant }}
+                            {% endif %}
+                            {% if interaction.is_image %}
+                                <img src="/static/images/{{ interaction.image_url }}" alt="Generated Image Here">
+                            {% endif %}
+                    </div>
+                </div>
+            {% endfor %}    
+        </div>
+    {% endif %}
+
 
     <div id="input-container">
-        <div>
-            Tokens outputted: {{ timings.predicted_n }} Tokens per second: {{ timings.predicted_per_second }}
+        <div id="timings">
+            {% if timings %}
+                    <div id="tokens">Tokens outputted: {{ timings.predicted_n }}</div> 
+                    <div id="tokens-per-second">Tokens per second: {{ timings.predicted_per_second }}</div>
+            {% endif %}
         </div>
-        <form action="/" method="post">
-            <textarea id="transcription" name="transcription" rows="3" required></textarea>
-            <button type="submit" id="send-button">Send</button>
+        <form id="input-form" action="/" method="post">
+            <div id="input-grid">
+                <textarea id="transcription" name="transcription" rows="3" required></textarea>
+                <button type="submit" id="send-button">Send</button>
+            </div>
         </form>
     </div>
 
@@ -133,6 +191,10 @@
             document.execCommand('copy');
             document.body.removeChild(textarea);
         }
+
+        window.onload = function() {
+            document.getElementById("transcription").focus();
+        };
     </script>
 </body>
 
