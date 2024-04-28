@@ -23,7 +23,7 @@ def generate(prompt):
         headers = {'Content-Type': 'application/json'}
         data = json.dumps({
             'prompt': prompt,
-            'n_predict': 128  # Adjust as needed
+            'n_predict': 8192  # Adjust as needed
         })
 
         response = requests.post(url, headers=headers, data=data)
@@ -35,7 +35,8 @@ def generate(prompt):
     except: 
         print(RED + "ERROR: " + RESET + "Start up the llama.cpp server with \"" + GREEN + "./server -m models/YOUR_MODEL -ngl 100" + RESET + "\" in the llama.cpp folder!")
 
-def tokenize(transcription, past_interaction): 
+# Mistral
+def tokenize_mistral(transcription, past_interaction): 
         system = "<|im_start|>system\nYou are an assistant called Lexie. You are a superintelligent system developed to help users and answer their questions. Give a short answer, please. You, Lexie, are really smart and answers in clear fashion but accurately<|im_end|>"
         for item in past_interaction: 
             system += item['user'] + item['assistant']
@@ -44,6 +45,24 @@ def tokenize(transcription, past_interaction):
         prompt = system + user + assistant
         return prompt, user, assistant
 
+
+# Llama-3
+def tokenize(transcription, past_interaction): 
+        system = "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\nYou are an assistant called Lexie. You are a superintelligent system developed to help users and answer their questions. Give a short answer, please. You, Lexie, are really smart and answers in clear fashion but accurately<|eot_id|>"
+        for item in past_interaction: 
+            system += item['user'] + item['assistant']
+        user = "<|start_header_id|>user<|end_header_id|>\n" + transcription + "<|eot_id|>"
+        assistant = "<|start_header_id|>assistant<|end_header_id|>\n"
+        prompt = system + user + assistant
+        return prompt, user, assistant
+
+"""
+<|begin_of_text|><|start_header_id|>system<|end_header_id|>
+
+{{ system_prompt }}<|eot_id|><|start_header_id|>user<|end_header_id|>
+
+{{ user_message }}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+"""
 
 def main():
     PRINT_CACHE = False
@@ -61,7 +80,7 @@ def main():
 
         # Tokenize the prompt
         prompt, user, assistant = tokenize(transcription, past_interaction)
-
+	
         # Generate response to prompt
         response = generate(prompt)
         if "<|im_end|>" in response: 
@@ -70,7 +89,7 @@ def main():
         # Handle past interaction. This works as a short term memory for the model.
         past_user = user
         past_assistant = assistant + response.strip() + "<|im_end|>"
-        
+	
         # How many of the past interactions we want to keep in memory
         # Be awere of the context length! 
         cache_length = 4
@@ -79,7 +98,6 @@ def main():
  
         # Print answer
         print(YELLOW + "Assistant: " + RESET + response.strip()) # <--- here is the output point
-
 
         if '```python' in response:
             print(f"{RED} Python detected! Do you want to run it (y/n)? {RESET}")
@@ -91,19 +109,20 @@ def main():
                 # Redirect stdout to capture prints
                 old_stdout = sys.stdout  # Save the current stdout
                 sys.stdout = buffer = io.StringIO()
+                err = ""
                 try: 
                     # Execute the code
                     exec(code)
-                except:
-                    print(RED + "ERROR in running code" + RESET) 
+                except Exception as e:
+                    print(RED + f"ERROR in running code {e}" + RESET)
+                    err = str(e) 
 
                 # Restore stdout and get the captured output
                 sys.stdout = old_stdout
                 captured_output = buffer.getvalue()
-                print(YELLOW + "Captured Output:\n" + captured_output + RESET)
-                past_assistant = past_assistant.replace('<|im_end|>', ' ') + captured_output + '<|im_end|>'
+                print(YELLOW + "Captured Output:\n" + captured_output + " \nPossible errors: " + err + RESET)
+                past_assistant = past_assistant.replace('<|im_end|>', ' ') + captured_output + err + '<|im_end|>'
 
-        
         past_interaction.append({'user': past_user, 'assistant': past_assistant})
         # Print cache
         if PRINT_CACHE:
@@ -112,7 +131,7 @@ def main():
                 print(f"Q:{i}")
                 print(MAGENTA + "Cache user: " + RESET + line['user'])
                 print(MAGENTA + "Cache assistant: " + RESET + line['assistant'])
-            print(MAGENTA + '-'*16 + "MEMORY WINDOW END" + '-'*16 + RESET) 
+            print(MAGENTA + '-'*16 + "MEMORY WINDOW END" + '-'*16 + RESET)
 if __name__ == "__main__": 
     main()
 
