@@ -1,9 +1,7 @@
 import os
-from gtts import gTTS
 import requests
 import json
-import pyaudio
-import wave
+from audioHandler import AudioHandler
 
 # ANSI escape codes for some colors
 RED = "\033[31m"  # Red text
@@ -13,7 +11,6 @@ BLUE = "\033[34m"  # Blue text
 MAGENTA = "\033[35m"  # Magenta text
 CYAN = "\033[36m"  # Cyan text
 RESET = "\033[0m"  # Reset to default color
-
 
 #====================================#
 # Class for creating an AI assistant #
@@ -40,22 +37,27 @@ class Assistant:
         except: 
             print(RED + "ERROR: " + RESET + "Start up the llama.cpp server with \"" + GREEN + "./server -m models/YOUR_MODEL -ngl 100" + RESET + "\" in the llama.cpp folder!")
 
-
-	# This is for wrapping the prompt to system prompt and start and end tokens.
-    # This version is vreated for Mistral-AI start and end tokens
-    # @param: user_input --  a string that is wrapped
-    # @param: past_interaction -- a list of past interaction between user and assistant
-    def tokenize(self, user_input, past_interaction): 
-        system = "<|im_start|>system\nYou are an assistant called Lexie. Help answer my questions. Give a short answer, please.  Lexie is really smart and answers in clear fashion but accurately<|im_end|>"
+    # Mistral
+    def tokenize(self, transcription, past_interaction): 
+        system = "<|im_start|>system\nYou are an assistant called Lexie. You are a superintelligent system developed to help users and answer their questions. Give a short answer, please. You, Lexie, are really smart and answers in clear fashion but accurately<|im_end|>"
         for item in past_interaction: 
             system += item['user'] + item['assistant']
-        user = "<|im_start|>user\n" + user_input + "<|im_end|>"
+        user = "<|im_start|>user\n" + transcription + "<|im_end|>"
         assistant = "<|im_start|>assistant\n"
         prompt = system + user + assistant
         return prompt, user, assistant
 
+    # Llama-3
+    def tokenize_llama(self, transcription, past_interaction): 
+        system = "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\nYou are an assistant called Lexie. You are a superintelligent system developed to help users and answer their questions. Give a short answer, please. You, Lexie, are really smart and answers in clear fashion but accurately<|eot_id|>"
+        for item in past_interaction: 
+            system += item['user'] + item['assistant']
+        user = "<|start_header_id|>user<|end_header_id|>\n" + transcription + "<|eot_id|>"
+        assistant = "<|start_header_id|>assistant<|end_header_id|>\n"
+        prompt = system + user + assistant
+        return prompt, user, assistant
 
-	# This is for transcribing speech to text
+    # This is for transcribing speech to text
     # @param: filename -- a path to the audio (WAV) -file for the api
     def transcribe_voice(self, filename):
         url = 'http://127.0.0.1:8080/inference'
@@ -81,59 +83,6 @@ class Assistant:
             print(f"An error occurred: {str(e)}")
 	    
 
-#====================================#
-# Class for handling audio i/o       #
-#====================================#
-class AudioHandler:
-
-	# This is for recording ther user input
-    # @param: filename -- a path to the audio (WAV) -file that is saved to current folder. 
-    # @param: record_seconds -- interger: how many seconds we record for one prompt 
-    def record_voice(self, filename, record_seconds):
-	    # Setup the parameters for recording
-        FORMAT = pyaudio.paInt16
-        CHANNELS = 1
-        RATE = 16000
-        CHUNK = 1024
-        audio = pyaudio.PyAudio()
-
-	    # Start recording
-        stream = audio.open(format=FORMAT, channels=CHANNELS,
-				    rate=RATE, input=True,
-				    frames_per_buffer=CHUNK)
-        
-        print("Recording...")
-        
-        frames = []
-        #print(RATE, CHUNK, record_seconds)
-        for i in range(0, int(RATE / CHUNK * record_seconds)):
-            data = stream.read(CHUNK)
-            frames.append(data)
-            
-        print("Analyzing...")
-	    # Stop and close the stream and audio
-        stream.stop_stream()
-        stream.close()
-        audio.terminate()
-
-	    # Save the recorded data as a WAV file
-        with wave.open(filename, 'wb') as waveFile:
-            waveFile.setnchannels(CHANNELS)
-            waveFile.setsampwidth(audio.get_sample_size(FORMAT))
-            waveFile.setframerate(RATE)
-            waveFile.writeframes(b''.join(frames))
-
-	# This is for playing assistant answer
-    # @param: assistant_text -- string of text that is converted from text to audio (speech)
-    def play(self, assistant_text): 
-        language = 'en'
-        sound = gTTS(text=assistant_text, lang=language, slow=False)
-        filename = "speak.mp3"
-        sound.save(filename)
-        os.system("play " + "speak.mp3"+" tempo 1.5")
-        os.remove(filename)
-
-
 #=====================================#
 # Class for handling user interaction #
 #=====================================#
@@ -157,12 +106,14 @@ class UI:
             past_assistant = ''
             # Record the user's voice
             voice_filename = "user_voice.wav"
-            self.audioHandler.record_voice(voice_filename, 3)
+            self.audioHandler.record_voice(voice_filename, 16)
 
 			# Transcribe the recorded voice
             transcription = self.ai.transcribe_voice(voice_filename)        
             if len(transcription) == 0: 
                 continue
+
+            print(50*"=") 
             print(BLUE + "\nUser: " + RESET, transcription)
 
 			# Exit calls
@@ -196,6 +147,7 @@ class UI:
 
 	# Here to modify the way we handle output
     def outputHandler(self, output, ah):
+        print(50*"=") 
         print(YELLOW + "Assistant: " + RESET + output)
         if '```python' in output: 
             print(f"{RED} Python detected! Do you want to run it (y/n)? {RESET}")
@@ -204,9 +156,7 @@ class UI:
                 code = output.split('```python')[1].split('```')[0]
                 print(RED + "Running: " + RESET + code)
                 exec(code)
-        else: 
-            ah.play(output.strip())
-            
+        print(50*"=") 
 #=================================
     
 def main():
