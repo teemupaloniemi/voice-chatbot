@@ -1,3 +1,5 @@
 *.png
+*.onnx
+*.json
 *.jpg
 /static

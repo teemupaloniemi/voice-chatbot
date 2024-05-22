@@ -1,4 +1,3 @@
-import os
 import requests
 import json
 from audioHandler import AudioHandler
@@ -39,7 +38,7 @@ class Assistant:
 
     # Mistral
     def tokenize(self, transcription, past_interaction): 
-        system = "<|im_start|>system\nYou are an assistant called Lexie. You are a superintelligent system developed to help users and answer their questions. Give a short answer, please. You, Lexie, are really smart and answers in clear fashion but accurately<|im_end|>"
+        system = "<|im_start|>system\nYou are an AI assistant known for your exceptional empathy and emotional intelligence. Your primary objective is to create a safe, supportive environment where users feel understood and valued. You achieve this by actively listening, asking meaningful and relevant questions, and responding with genuine concern and insight. At the same time, you are intellectually sharp and capable of challenging users' ideas and perspectives to promote growth and deeper understanding.<|im_end|>"
         for item in past_interaction: 
             system += item['user'] + item['assistant']
         user = "<|im_start|>user\n" + transcription + "<|im_end|>"
@@ -97,8 +96,7 @@ class UI:
         self.ai = ai 
         self.audioHandler = audioHandler
         
-
-	# This starts the interaction between user and ai
+    # This starts the interaction between user and ai
     def start(self):
         past_interaction = []
         while 1:
@@ -106,21 +104,33 @@ class UI:
             past_assistant = ''
             # Record the user's voice
             voice_filename = "user_voice.wav"
-            self.audioHandler.record_voice(voice_filename, 16)
+            self.audioHandler.record_voice(voice_filename, 8)
 
-			# Transcribe the recorded voice
+            # Transcribe the recorded voice
             transcription = self.ai.transcribe_voice(voice_filename)        
-            if len(transcription) == 0: 
+            if len(transcription) == 0:
+                continue
+               
+            # Wrap in model specific format
+            prompt, user, assistant = self.ai.tokenize(transcription, past_interaction)
+
+            # Not an activating command
+            if '<enter assistant name here>' not in transcription.lower(): 
+                cache_length = 10
+                if len(past_interaction) > cache_length: 
+                    past_interaction.pop(0)
+                past_interaction.append({'user': transcription, 'assistant': ''}) 
+                print(50*"=") 
+                print(BLUE + "User: " + RESET, transcription)
                 continue
 
             print(50*"=") 
-            print(BLUE + "\nUser: " + RESET, transcription)
+            print(BLUE + "User: " + RESET, transcription)
 
-			# Exit calls
+	    # Exit calls
             if "exit" in transcription.lower() or "stop" in transcription.lower():
                 break
 
-            prompt, user, assistant = self.ai.tokenize(transcription, past_interaction)
             response = self.ai.generate(prompt)
             if "<|im_end|>" in response: 
                 response.replace('<|im_end|>', '')
@@ -130,12 +140,12 @@ class UI:
             cache_length = 10
             if len(past_interaction) > cache_length: 
                 past_interaction.pop(0)
-                past_interaction.append({'user': past_user, 'assistant': past_assistant})
+            past_interaction.append({'user': past_user, 'assistant': past_assistant})
 	
-			# Print answer
+            # Print answer
             self.outputHandler(response.strip(), self.audioHandler)
 
-			# Print cache
+            # Print cache
             if self.PRINT_CACHE:
                 print(MAGENTA + '-'*16 + "MEMORY WINDOW START" + '-'*16 + RESET) 
                 for i, line in enumerate(past_interaction): 
@@ -148,7 +158,7 @@ class UI:
 	# Here to modify the way we handle output
     def outputHandler(self, output, ah):
         print(50*"=") 
-        print(YELLOW + "Assistant: " + RESET + output)
+        print(YELLOW + "Assistant: " + RESET + output.replace('<|im_end|>',''))
         if '```python' in output: 
             print(f"{RED} Python detected! Do you want to run it (y/n)? {RESET}")
             ans = input("(y/n)") # apparently some sort of AI-safety thing :)
@@ -156,6 +166,8 @@ class UI:
                 code = output.split('```python')[1].split('```')[0]
                 print(RED + "Running: " + RESET + code)
                 exec(code)
+        else: 
+            ah.play(output.strip())
         print(50*"=") 
 #=================================
     

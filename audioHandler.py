@@ -1,3 +1,4 @@
+import os
 import wave
 import pyaudio
 #====================================#
@@ -41,4 +42,11 @@ class AudioHandler:
             waveFile.setsampwidth(audio.get_sample_size(FORMAT))
             waveFile.setframerate(RATE)
             waveFile.writeframes(b''.join(frames))
+
+    def play(self, assistant_text): 
+        print(50*"=") 
+        filename = "speak.wav"
+        os.system(f'printf "{assistant_text}" | piper -m en_US-amy-medium --output-file {filename}') 
+        os.system("play " + filename +" tempo 1.5")
+        os.remove(filename)
 
