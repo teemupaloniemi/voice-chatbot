@@ -36,7 +36,7 @@ def generate(prompt):
         print(RED + "ERROR: " + RESET + "Start up the llama.cpp server with \"" + GREEN + "./server -m models/YOUR_MODEL -ngl 100" + RESET + "\" in the llama.cpp folder!")
 
 # Mistral
-def tokenize_mistral(transcription, past_interaction): 
+def tokenize(transcription, past_interaction): 
         system = "<|im_start|>system\nYou are an assistant called Lexie. You are a superintelligent system developed to help users and answer their questions. Give a short answer, please. You, Lexie, are really smart and answers in clear fashion but accurately<|im_end|>"
         for item in past_interaction: 
             system += item['user'] + item['assistant']
@@ -47,7 +47,7 @@ def tokenize_mistral(transcription, past_interaction):
 
 
 # Llama-3
-def tokenize(transcription, past_interaction): 
+def tokenize_llama(transcription, past_interaction): 
         system = "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\nYou are an assistant called Lexie. You are a superintelligent system developed to help users and answer their questions. Give a short answer, please. You, Lexie, are really smart and answers in clear fashion but accurately<|eot_id|>"
         for item in past_interaction: 
             system += item['user'] + item['assistant']

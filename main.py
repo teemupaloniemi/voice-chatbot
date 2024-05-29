@@ -36,7 +36,7 @@ class Assistant:
         except: 
             print(RED + "ERROR: " + RESET + "Start up the llama.cpp server with \"" + GREEN + "./server -m models/YOUR_MODEL -ngl 100" + RESET + "\" in the llama.cpp folder!")
 
-    # Mistral
+    # Hermes tokens
     def tokenize(self, transcription, past_interaction): 
         system = "<|im_start|>system\nYou are an AI assistant known for your exceptional empathy and emotional intelligence. Your primary objective is to create a safe, supportive environment where users feel understood and valued. You achieve this by actively listening, asking meaningful and relevant questions, and responding with genuine concern and insight. At the same time, you are intellectually sharp and capable of challenging users' ideas and perspectives to promote growth and deeper understanding.<|im_end|>"
         for item in past_interaction: 
@@ -46,7 +46,6 @@ class Assistant:
         prompt = system + user + assistant
         return prompt, user, assistant
 
-    # Llama-3
     def tokenize_llama(self, transcription, past_interaction): 
         system = "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\nYou are an assistant called Lexie. You are a superintelligent system developed to help users and answer their questions. Give a short answer, please. You, Lexie, are really smart and answers in clear fashion but accurately<|eot_id|>"
         for item in past_interaction: 
@@ -104,7 +103,7 @@ class UI:
             past_assistant = ''
             # Record the user's voice
             voice_filename = "user_voice.wav"
-            self.audioHandler.record_voice(voice_filename, 8)
+            self.audioHandler.record_voice(voice_filename, 3)
 
             # Transcribe the recorded voice
             transcription = self.ai.transcribe_voice(voice_filename)        
@@ -115,14 +114,14 @@ class UI:
             prompt, user, assistant = self.ai.tokenize(transcription, past_interaction)
 
             # Not an activating command
-            if '<enter assistant name here>' not in transcription.lower(): 
+            if True or '<enter assistant name here>' not in transcription.lower(): 
                 cache_length = 10
                 if len(past_interaction) > cache_length: 
                     past_interaction.pop(0)
                 past_interaction.append({'user': transcription, 'assistant': ''}) 
-                print(50*"=") 
-                print(BLUE + "User: " + RESET, transcription)
-                continue
+                #print(50*"=") 
+                #print(BLUE + "User: " + RESET, transcription)
+                #continue
 
             print(50*"=") 
             print(BLUE + "User: " + RESET, transcription)
@@ -166,14 +165,14 @@ class UI:
                 code = output.split('```python')[1].split('```')[0]
                 print(RED + "Running: " + RESET + code)
                 exec(code)
-        else: 
-            ah.play(output.strip())
+        #else: 
+        #    ah.play(output.strip())
         print(50*"=") 
 #=================================
     
 def main():
     ai = Assistant()
-    audioHandler = AudioHandler()
+    audioHandler = AudioHandler(DEBUG=False)
     ui = UI(ai, audioHandler)
     ui.start()
     

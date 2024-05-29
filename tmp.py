@@ -55,13 +55,13 @@ class AudioHandler:
                 N = bytes_data[idx] + 0x100*bytes_data[idx+1]
                 if (N & (1 << (16 - 1))) != 0:
                     N = N - (1 << 16)
+                print(int(N))
                 tmp_i_data.append(int(N))
             return tmp_i_data 
         
         # Capture audio until speaking stops
-        stop = False
-        while not stop:
-        #for i in range(0, int(RATE / CHUNK * record_seconds)):
+        #while 1:
+        for i in range(0, int(RATE / CHUNK * record_seconds)):
 
             # Read  data from source (microphone/file)
             data = stream.read(CHUNK)
@@ -90,14 +90,13 @@ class AudioHandler:
                 aad_avg = aad_ma_meter.average()
                 if self.DEBUG:
                     aads.append(aad_avg)
-                #print(f"| Data point: {i:3f} | Moving avg: {avg:3f} | Differential: {diff:3f} | Differential moving average: {aad_avg:3f} |")
+                    #print(f"| Data point: {i:3f} | Moving avg: {avg:3f} | Differential: {diff:3f} | Differential moving average: {aad_avg:3f} |")
 
                 # Stop if the average derivative is negative
                 if aad_avg < 0:
-                    print("Break detected!")
                     if not self.DEBUG:    
-                        stop = True
                         break
+                    print("Break detected!")
         
         # Debug means plotting
         if self.DEBUG:
