@@ -2,4 +2,6 @@
 *.onnx
 *.json
 *.jpg
+*.wav
+*.mp3
 /static
