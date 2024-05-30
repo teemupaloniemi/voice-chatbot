@@ -10,6 +10,7 @@ BLUE = "\033[34m"  # Blue text
 MAGENTA = "\033[35m"  # Magenta text
 CYAN = "\033[36m"  # Cyan text
 RESET = "\033[0m"  # Reset to default color
+BASE_IP = "localhost"
 
 #====================================#
 # Class for creating an AI assistant #
@@ -20,7 +21,7 @@ class Assistant:
     # @param: prompt --  a string that is passed to the api 
     def generate(self, prompt):
         try: 
-            url = 'http://localhost:8081/completion'  # Replace with the correct URL if needed
+            url = f'http://{BASE_IP}:8081/completion'  # Replace with the correct URL if needed
             headers = {'Content-Type': 'application/json'}
             data = json.dumps({
 				'prompt': prompt,
@@ -58,7 +59,7 @@ class Assistant:
     # This is for transcribing speech to text
     # @param: filename -- a path to the audio (WAV) -file for the api
     def transcribe_voice(self, filename):
-        url = 'http://127.0.0.1:8080/inference'
+        url = f'http://{BASE_IP}:8080/inference'
         file_path = filename
         temperature = '0.0'
         temperature_inc = '0.2'
