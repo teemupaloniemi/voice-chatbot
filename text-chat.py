@@ -79,7 +79,7 @@ def main():
             break
 
         # Tokenize the prompt
-        prompt, user, assistant = tokenize(transcription, past_interaction)
+        prompt, user, assistant = tokenize_llama(transcription, past_interaction)
 	
         # Generate response to prompt
         response = generate(prompt)

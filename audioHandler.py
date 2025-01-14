@@ -2,6 +2,10 @@ import matplotlib.pyplot as plt
 import os
 import wave
 import pyaudio
+from scipy import signal
+import numpy as np
+
+STOP_THRESHOLD = 16
 #====================================#
 # Class for handling audio i/o       #
 #====================================#
@@ -16,18 +20,15 @@ class AudioHandler:
     # @param: filename -- a path to the audio (WAV) -file that is saved to current folder. 
     # @param: record_seconds -- interger: how many seconds we record for one prompt 
     def record_voice(self, filename, record_seconds):
-	    # Setup the parameters for recording
+	# Setup the parameters for recording
         FORMAT = pyaudio.paInt16
         CHANNELS = 1
         RATE = 16000
         CHUNK = 1024
         audio = pyaudio.PyAudio()
 
-	    # Open stream for recording input
-        stream = audio.open(format=FORMAT, 
-                            channels=CHANNELS,
-				            rate=RATE, input=True,
-				            frames_per_buffer=CHUNK)
+	# Open stream for recording input
+        stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
         print(50*"=") 
         print("Recording...")
     
@@ -60,6 +61,7 @@ class AudioHandler:
         
         # Capture audio until speaking stops
         stop = False
+        last_aad_avg = 0
         while not stop:
         #for i in range(0, int(RATE / CHUNK * record_seconds)):
 
@@ -92,12 +94,13 @@ class AudioHandler:
                     aads.append(aad_avg)
                 #print(f"| Data point: {i:3f} | Moving avg: {avg:3f} | Differential: {diff:3f} | Differential moving average: {aad_avg:3f} |")
 
-                # Stop if the average derivative is negative
-                if aad_avg < 0:
-                    print("Break detected!")
-                    if not self.DEBUG:    
-                        stop = True
-                        break
+                # Stop if the average derivative is negative 
+                if aad_avg < last_aad_avg:
+                    print("Stopping...")
+                    stop = True
+                    break
+                last_aad_avg = aad_avg
+           
         
         # Debug means plotting
         if self.DEBUG:
@@ -106,6 +109,7 @@ class AudioHandler:
             ax1.plot(avgs, color='tab:red')
             ax2 = ax1.twinx()   
             ax2.plot(aads, color='tab:green')
+            ax2.plot(np.repeat([STOP_THRESHOLD], len(vals)), color='tab:purple')
             plt.show()
             
         print("Analyzing...")

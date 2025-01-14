@@ -173,7 +173,7 @@ class UI:
     
 def main():
     ai = Assistant()
-    audioHandler = AudioHandler(DEBUG=False)
+    audioHandler = AudioHandler(DEBUG=True)
     ui = UI(ai, audioHandler)
     ui.start()
     
